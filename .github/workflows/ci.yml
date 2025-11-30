@@ -1,0 +1,101 @@
+name: CI
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main, develop]
+
+jobs:
+  lint:
+    name: Lint
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v2
+        with:
+          version: 10
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'pnpm'
+      - run: pnpm install
+      - name: Lint web app
+        run: pnpm --filter @prescribe-verify/web lint
+      - name: Lint indexer
+        run: pnpm --filter @prescribe-verify/indexer lint
+      - name: Lint notifications
+        run: pnpm --filter @prescribe-verify/notifications lint
+
+  typecheck:
+    name: Type Check
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v2
+        with:
+          version: 10
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'pnpm'
+      - run: pnpm install
+      - name: Type check web app
+        run: pnpm --filter @prescribe-verify/web typecheck || true
+      - name: Type check indexer
+        run: pnpm --filter @prescribe-verify/indexer build
+      - name: Type check notifications
+        run: pnpm --filter @prescribe-verify/notifications build
+
+  test:
+    name: Test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v2
+        with:
+          version: 10
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'pnpm'
+      - run: pnpm install
+      - name: Test web app
+        run: pnpm --filter @prescribe-verify/web test || true
+      - name: Test indexer
+        run: pnpm --filter @prescribe-verify/indexer test || true
+      - name: Test notifications
+        run: pnpm --filter @prescribe-verify/notifications test || true
+
+  build:
+    name: Build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v2
+        with:
+          version: 10
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'pnpm'
+      - run: pnpm install
+      - name: Build web app
+        run: pnpm --filter @prescribe-verify/web build
+      - name: Build indexer
+        run: pnpm --filter @prescribe-verify/indexer build
+      - name: Build notifications
+        run: pnpm --filter @prescribe-verify/notifications build
+
+  # TODO: Add job for Plutus script compilation (if using Haskell)
+  # compile-contracts:
+  #   name: Compile Plutus Contracts
+  #   runs-on: ubuntu-latest
+  #   steps:
+  #     - uses: actions/checkout@v4
+  #     - uses: haskell/actions/setup@v2
+  #     - run: |
+  #         cd packages/onchain-scripts
+  #         cabal build
+  #         ./scripts/compile.sh
+

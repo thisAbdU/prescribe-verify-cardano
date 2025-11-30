@@ -1,0 +1,11 @@
+{
+  "name": "@prescribe-verify/onchain-scripts",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Plutus validator scripts for prescription verification",
+  "scripts": {
+    "compile": "./scripts/compile.sh",
+    "deploy": "../scripts/deploy-contracts.sh"
+  }
+}
+

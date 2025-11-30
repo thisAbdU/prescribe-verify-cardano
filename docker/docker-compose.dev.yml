@@ -1,0 +1,58 @@
+version: '3.8'
+
+services:
+  # Supabase Local Development (optional)
+  # Uncomment if you want to run Supabase locally
+  # supabase:
+  #   image: supabase/supabase:latest
+  #   ports:
+  #     - "54321:54321"  # API
+  #     - "54322:54322"  # DB
+  #   environment:
+  #     POSTGRES_PASSWORD: postgres
+  #     JWT_SECRET: your-super-secret-jwt-token
+  #   volumes:
+  #     - supabase_data:/var/lib/postgresql/data
+
+  # Local Cardano Node (optional, for local development)
+  # Uncomment if you want to run a local Cardano node
+  # This requires significant resources and setup
+  # cardano-node:
+  #   image: inputoutput/cardano-node:latest
+  #   volumes:
+  #     - cardano_data:/data
+  #     - ./cardano-node/config:/config
+  #   command:
+  #     - run
+  #     - --config
+  #     - /config/testnet-config.json
+  #     - --database-path
+  #     - /data/db
+  #     - --socket-path
+  #     - /data/node.socket
+  #   environment:
+  #     CARDANO_NETWORK: testnet
+  #   ports:
+  #     - "3001:3001"  # Cardano node port
+
+  # Mock Blockfrost Service (optional, for local testing)
+  # Uncomment if you want to mock Blockfrost API locally
+  # mock-blockfrost:
+  #   image: your-mock-blockfrost-image
+  #   ports:
+  #     - "8080:8080"
+  #   environment:
+  #     MOCK_NETWORK: testnet
+
+volumes:
+  supabase_data:
+  cardano_data:
+
+# TODO: Add services for:
+# - Indexer service (Node.js)
+# - Notifications service (Node.js)
+# - API service (if needed)
+
+# Usage:
+# docker-compose -f docker/docker-compose.dev.yml up -d
+

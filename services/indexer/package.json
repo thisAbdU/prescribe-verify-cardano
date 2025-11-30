@@ -1,0 +1,25 @@
+{
+  "name": "@prescribe-verify/indexer",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "tsx watch src/worker.ts",
+    "build": "tsc",
+    "start": "node dist/worker.js",
+    "test": "vitest",
+    "lint": "eslint src --ext .ts"
+  },
+  "dependencies": {
+    "@blockfrost/blockfrost-js": "^7.0.0",
+    "@supabase/supabase-js": "^2.39.0",
+    "dotenv": "^16.3.1"
+  },
+  "devDependencies": {
+    "@types/node": "^22",
+    "tsx": "^4.7.0",
+    "typescript": "^5",
+    "vitest": "^1.2.0"
+  }
+}
+
