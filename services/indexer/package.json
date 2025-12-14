@@ -8,7 +8,7 @@
     "build": "tsc",
     "start": "node dist/worker.js",
     "test": "vitest",
-    "lint": "eslint src --ext .ts"
+    "lint": "tsc --noEmit"
   },
   "dependencies": {
     "@blockfrost/blockfrost-js": "^6.0.0",
