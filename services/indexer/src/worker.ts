@@ -16,7 +16,7 @@
  */
 
 import "dotenv/config";
-import { Blockfrost } from "@blockfrost/blockfrost-js";
+import { BlockFrostAPI } from "@blockfrost/blockfrost-js";
 import { createClient } from "@supabase/supabase-js";
 import { decodeDatum, type PrescriptionDatum } from "./datum";
 
@@ -32,12 +32,10 @@ if (!process.env.PRESCRIPTION_VALIDATOR_SCRIPT_ADDRESS) {
   throw new Error("PRESCRIPTION_VALIDATOR_SCRIPT_ADDRESS environment variable is required");
 }
 
-const blockfrost = new Blockfrost(
-  process.env.CARDANO_NETWORK === "mainnet"
-    ? "https://cardano-mainnet.blockfrost.io/api/v0"
-    : "https://cardano-preview.blockfrost.io/api/v0",
-  process.env.BLOCKFROST_PROJECT_ID
-);
+const blockfrost = new BlockFrostAPI({
+  projectId: process.env.BLOCKFROST_PROJECT_ID,
+  network: process.env.CARDANO_NETWORK === "mainnet" ? "mainnet" : "preview",
+});
 
 const supabase = createClient(
   process.env.SUPABASE_URL,
@@ -170,7 +168,7 @@ async function checkSpentUTxOs() {
 
   const utxos = await blockfrost.addressesUtxos(SCRIPT_ADDRESS);
   const activeUtxoRefs = new Set(
-    utxos.map((utxo) => `${utxo.tx_hash}#${utxo.output_index}`)
+    utxos.map((utxo: any) => `${utxo.tx_hash}#${utxo.output_index}`)
   );
 
   for (const prescription of activePrescriptions) {

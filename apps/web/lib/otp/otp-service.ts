@@ -1,12 +1,5 @@
-import twilio from 'twilio'
 import nodemailer from 'nodemailer'
 import crypto from 'crypto'
-
-// Twilio client for SMS (backup)
-const twilioClient = twilio(
-  process.env.TWILIO_ACCOUNT_SID,
-  process.env.TWILIO_AUTH_TOKEN
-)
 
 // Email transporter for OTP delivery (lazy initialization)
 function getEmailTransporter() {

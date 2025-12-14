@@ -196,7 +196,7 @@ export default function PharmacyDashboard() {
     }
 
     if (txHash) {
-        const network = process.env.NEXT_PUBLIC_CARDANO_NETWORK || "Preview"
+        const network = "Preview"
         const explorerUrls = getAllExplorerUrls(txHash, network)
         
         return (
@@ -256,7 +256,7 @@ export default function PharmacyDashboard() {
             )}
 
             {status && (
-                <AlertBanner variant="info" title="Status">
+                <AlertBanner variant="default" title="Status">
                     {status}
                 </AlertBanner>
             )}
@@ -284,7 +284,7 @@ export default function PharmacyDashboard() {
                         </CardDescription>
                     </CardHeader>
                 </Card>
-            )
+            )}
 
             <div className="grid gap-6 md:grid-cols-2">
                 <Card>
@@ -368,7 +368,7 @@ export default function PharmacyDashboard() {
                                 </AlertBanner>
                             )}
                             {verificationResult.status === "partially_redeemed" && (
-                                <AlertBanner variant="info" title="Partially Redeemed">
+                                <AlertBanner variant="default" title="Partially Redeemed">
                                     This prescription has been partially redeemed but has refills remaining.
                                 </AlertBanner>
                             )}

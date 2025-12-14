@@ -14,7 +14,7 @@
  *   npm install @cardano-foundation/koios-sdk
  */
 
-import { Blockfrost } from "@blockfrost/blockfrost-js";
+import { BlockFrostAPI } from "@blockfrost/blockfrost-js";
 import type { PrescriptionUTxO, PrescriptionDatum } from "../lib/cardano/types";
 import { decodeDatum } from "../lib/cardano/builder";
 
@@ -32,12 +32,10 @@ function getBlockfrostClient() {
     process.env.CARDANO_NETWORK ||
     "testnet";
 
-  const blockfrost = new Blockfrost(
-    network === "mainnet"
-      ? "https://cardano-mainnet.blockfrost.io/api/v0"
-      : "https://cardano-preview.blockfrost.io/api/v0",
-    projectId
-  );
+  const blockfrost = new BlockFrostAPI({
+    projectId,
+    network: network === "mainnet" ? "mainnet" : "preview",
+  });
 
   return blockfrost;
 }
@@ -69,7 +67,11 @@ export async function getPrescriptionUTxO(
     throw new Error(`UTxO has no datum: ${utxoReference}`);
   }
 
-  const datum = decodeDatum(output.inline_datum || output.data_hash);
+  const datumData = output.inline_datum || output.data_hash;
+  if (!datumData) {
+    throw new Error("UTxO has no datum");
+  }
+  const datum = decodeDatum(datumData);
 
   return {
     txHash,
@@ -147,6 +149,9 @@ export async function isUTxOSpent(utxoReference: string): Promise<boolean> {
 export async function getCurrentBlockHeight(): Promise<number> {
   const blockfrost = getBlockfrostClient();
   const latestBlock = await blockfrost.blocksLatest();
+  if (!latestBlock.height) {
+    throw new Error("Failed to get latest block height");
+  }
   return latestBlock.height;
 }
 

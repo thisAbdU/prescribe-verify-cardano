@@ -148,17 +148,17 @@ function encodeRedeemer(redeemer: PrescriptionRedeemer): string {
   let redeemerData: any;
 
   if (redeemer.action === RedeemerAction.CREATE) {
-    redeemerData = { action: "CREATE" };
+    redeemerData = { Action: "CREATE" };
   } else if (redeemer.action === RedeemerAction.REDEEM) {
     redeemerData = {
-      action: "REDEEM",
+      Action: "REDEEM",
       pharmacyPubKeyHash: redeemer.pharmacyPubKeyHash
         ? (redeemer.pharmacyPubKeyHash.startsWith("0x") ? redeemer.pharmacyPubKeyHash.slice(2) : redeemer.pharmacyPubKeyHash)
         : null,
       patientConsentCode: redeemer.patientConsentCode ? fromText(redeemer.patientConsentCode) : null,
     };
   } else if (redeemer.action === RedeemerAction.REFILL) {
-    redeemerData = { action: "REFILL" };
+    redeemerData = { Action: "REFILL" };
   } else {
     throw new Error(`Unknown redeemer action: ${redeemer.action}`);
   }
@@ -192,9 +192,17 @@ const PrescriptionDatumSchema = Data.Object({
 });
 
 const RedeemerSchema = Data.Enum([
-  Data.Object({ action: Data.Literal("CREATE") }),
-  Data.Object({ action: Data.Literal("REDEEM"), pharmacyPubKeyHash: Data.Nullable(Data.Bytes()), patientConsentCode: Data.Nullable(Data.Bytes()) }),
-  Data.Object({ action: Data.Literal("REFILL") }),
+  Data.Object({
+    Action: Data.Literal("CREATE"),
+  }),
+  Data.Object({
+    Action: Data.Literal("REDEEM"),
+    pharmacyPubKeyHash: Data.Nullable(Data.Bytes()),
+    patientConsentCode: Data.Nullable(Data.Bytes()),
+  }),
+  Data.Object({
+    Action: Data.Literal("REFILL"),
+  }),
 ]);
 
 export function encodeDatum(datum: PrescriptionDatum): string {

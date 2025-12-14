@@ -267,7 +267,7 @@ export default function PrescriptionVerification() {
       // Update prescription status in localStorage (in real app, update database)
       const storedPrescriptions = JSON.parse(localStorage.getItem('prescriptions') || '[]')
       const updatedPrescriptions = storedPrescriptions.map((p: any) => {
-        if (p.id === verificationResult.prescriptionData.prescriptionId) {
+        if (verificationResult.prescriptionData && p.id === verificationResult.prescriptionData.prescriptionId) {
           return {
             ...p,
             status: 'dispensed',

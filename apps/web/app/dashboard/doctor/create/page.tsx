@@ -162,7 +162,7 @@ export default function CreatePrescriptionPage() {
     }
 
     if (txHash) {
-        const network = process.env.NEXT_PUBLIC_CARDANO_NETWORK || "Preview"
+        const network = "Preview"
         const explorerUrls = getAllExplorerUrls(txHash, network)
         
         return (
