@@ -118,7 +118,3 @@ Add the generated address to environment variables.
 - **Hash patient identifiers** before on-chain storage
 - **Use encrypted storage** for sensitive data
 - **Never commit** `.env` files
-
-## License
-
-[Your License Here]
