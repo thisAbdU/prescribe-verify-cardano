@@ -1,5 +1,5 @@
 {
-  "buildCommand": "cd apps/web && next build",
-  "installCommand": "pnpm install --frozen-lockfile"
+  "buildCommand": "next build",
+  "installCommand": "cd ../.. && pnpm install --frozen-lockfile"
 }
 
