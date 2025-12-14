@@ -58,39 +58,63 @@ export type WalletInfo = {
  * ```
  */
 export async function connectWallet(provider: WalletProvider): Promise<WalletInfo> {
-  // TODO: Implement wallet connection
-  // 
-  // Example for Nami:
-  // if (provider === WalletProvider.NAMI) {
-  //   if (typeof window !== "undefined" && window.cardano?.nami) {
-  //     const api = await window.cardano.nami.enable();
-  //     const address = (await api.getUsedAddresses())[0];
-  //     return {
-  //       provider,
-  //       address,
-  //       isConnected: true,
-  //     };
-  //   }
-  //   throw new Error("Nami wallet not found. Please install Nami extension.");
-  // }
-  // 
-  // Example for Eternl:
-  // if (provider === WalletProvider.ETERNL) {
-  //   if (typeof window !== "undefined" && window.cardano?.eternl) {
-  //     const api = await window.cardano.eternl.enable();
-  //     const address = (await api.getUsedAddresses())[0];
-  //     return {
-  //       provider,
-  //       address,
-  //       isConnected: true,
-  //     };
-  //   }
-  //   throw new Error("Eternl wallet not found. Please install Eternl extension.");
-  // }
-  // 
-  // Similar for other wallets...
+  if (typeof window === "undefined") {
+    throw new Error("Wallet connection is only available in the browser");
+  }
 
-  throw new Error(`TODO: Implement connectWallet for ${provider}`);
+  let api: any;
+  let address: string;
+
+  switch (provider) {
+    case WalletProvider.NAMI:
+      if (!window.cardano?.nami) {
+        throw new Error("Nami wallet not found. Please install Nami extension.");
+      }
+      api = await window.cardano.nami.enable();
+      address = (await api.getUsedAddresses())[0];
+      break;
+
+    case WalletProvider.ETERNL:
+      if (!window.cardano?.eternl) {
+        throw new Error("Eternl wallet not found. Please install Eternl extension.");
+      }
+      api = await window.cardano.eternl.enable();
+      address = (await api.getUsedAddresses())[0];
+      break;
+
+    case WalletProvider.FLINT:
+      if (!window.cardano?.flint) {
+        throw new Error("Flint wallet not found. Please install Flint extension.");
+      }
+      api = await window.cardano.flint.enable();
+      address = (await api.getUsedAddresses())[0];
+      break;
+
+    case WalletProvider.LACE:
+      if (!window.cardano?.lace) {
+        throw new Error("Lace wallet not found. Please install Lace extension.");
+      }
+      api = await window.cardano.lace.enable();
+      address = (await api.getUsedAddresses())[0];
+      break;
+
+    case WalletProvider.GERO:
+      if (!window.cardano?.gero) {
+        throw new Error("Gero wallet not found. Please install Gero extension.");
+      }
+      api = await window.cardano.gero.enable();
+      address = (await api.getUsedAddresses())[0];
+      break;
+
+    default:
+      throw new Error(`Unsupported wallet provider: ${provider}`);
+  }
+
+  return {
+    provider,
+    address,
+    isConnected: true,
+  };
 }
 
 /**
@@ -114,20 +138,59 @@ export async function signTx(
   unsignedTx: string,
   walletInfo: WalletInfo
 ): Promise<string> {
-  // TODO: Implement transaction signing
-  // 
-  // Example for Nami:
-  // if (walletInfo.provider === WalletProvider.NAMI) {
-  //   if (typeof window !== "undefined" && window.cardano?.nami) {
-  //     const api = await window.cardano.nami.enable();
-  //     const signedTx = await api.signTx(unsignedTx, true); // true = partial sign
-  //     return signedTx;
-  //   }
-  // }
-  // 
-  // Similar for other wallets...
+  if (typeof window === "undefined") {
+    throw new Error("Transaction signing is only available in the browser");
+  }
 
-  throw new Error(`TODO: Implement signTx for ${walletInfo.provider}`);
+  let api: any;
+  let signedTx: string;
+
+  switch (walletInfo.provider) {
+    case WalletProvider.NAMI:
+      if (!window.cardano?.nami) {
+        throw new Error("Nami wallet not found");
+      }
+      api = await window.cardano.nami.enable();
+      signedTx = await api.signTx(unsignedTx, true);
+      break;
+
+    case WalletProvider.ETERNL:
+      if (!window.cardano?.eternl) {
+        throw new Error("Eternl wallet not found");
+      }
+      api = await window.cardano.eternl.enable();
+      signedTx = await api.signTx(unsignedTx, true);
+      break;
+
+    case WalletProvider.FLINT:
+      if (!window.cardano?.flint) {
+        throw new Error("Flint wallet not found");
+      }
+      api = await window.cardano.flint.enable();
+      signedTx = await api.signTx(unsignedTx, true);
+      break;
+
+    case WalletProvider.LACE:
+      if (!window.cardano?.lace) {
+        throw new Error("Lace wallet not found");
+      }
+      api = await window.cardano.lace.enable();
+      signedTx = await api.signTx(unsignedTx, true);
+      break;
+
+    case WalletProvider.GERO:
+      if (!window.cardano?.gero) {
+        throw new Error("Gero wallet not found");
+      }
+      api = await window.cardano.gero.enable();
+      signedTx = await api.signTx(unsignedTx, true);
+      break;
+
+    default:
+      throw new Error(`Unsupported wallet provider: ${walletInfo.provider}`);
+  }
+
+  return signedTx;
 }
 
 /**
@@ -137,13 +200,53 @@ export async function signTx(
  * @returns Wallet address (Bech32 format)
  */
 export async function getAddress(walletInfo: WalletInfo): Promise<string> {
-  // TODO: Implement get address
-  // 
-  // if (typeof window !== "undefined" && window.cardano?.[walletInfo.provider]) {
-  //   const api = await window.cardano[walletInfo.provider].enable();
-  //   const addresses = await api.getUsedAddresses();
-  //   return addresses[0];
-  // }
+  if (typeof window === "undefined") {
+    return walletInfo.address;
+  }
+
+  let api: any;
+
+  switch (walletInfo.provider) {
+    case WalletProvider.NAMI:
+      if (window.cardano?.nami) {
+        api = await window.cardano.nami.enable();
+        const addresses = await api.getUsedAddresses();
+        return addresses[0];
+      }
+      break;
+
+    case WalletProvider.ETERNL:
+      if (window.cardano?.eternl) {
+        api = await window.cardano.eternl.enable();
+        const addresses = await api.getUsedAddresses();
+        return addresses[0];
+      }
+      break;
+
+    case WalletProvider.FLINT:
+      if (window.cardano?.flint) {
+        api = await window.cardano.flint.enable();
+        const addresses = await api.getUsedAddresses();
+        return addresses[0];
+      }
+      break;
+
+    case WalletProvider.LACE:
+      if (window.cardano?.lace) {
+        api = await window.cardano.lace.enable();
+        const addresses = await api.getUsedAddresses();
+        return addresses[0];
+      }
+      break;
+
+    case WalletProvider.GERO:
+      if (window.cardano?.gero) {
+        api = await window.cardano.gero.enable();
+        const addresses = await api.getUsedAddresses();
+        return addresses[0];
+      }
+      break;
+  }
 
   return walletInfo.address;
 }
@@ -166,22 +269,22 @@ export async function disconnectWallet(walletInfo: WalletInfo): Promise<void> {
  * @returns Whether the wallet extension is installed
  */
 export function isWalletAvailable(provider: WalletProvider): boolean {
-  // TODO: Check if wallet is available
-  // 
-  // if (typeof window === "undefined") return false;
-  // 
-  // switch (provider) {
-  //   case WalletProvider.NAMI:
-  //     return !!window.cardano?.nami;
-  //   case WalletProvider.ETERNL:
-  //     return !!window.cardano?.eternl;
-  //   case WalletProvider.FLINT:
-  //     return !!window.cardano?.flint;
-  //   default:
-  //     return false;
-  // }
+  if (typeof window === "undefined") return false;
 
-  return false;
+  switch (provider) {
+    case WalletProvider.NAMI:
+      return !!window.cardano?.nami;
+    case WalletProvider.ETERNL:
+      return !!window.cardano?.eternl;
+    case WalletProvider.FLINT:
+      return !!window.cardano?.flint;
+    case WalletProvider.LACE:
+      return !!window.cardano?.lace;
+    case WalletProvider.GERO:
+      return !!window.cardano?.gero;
+    default:
+      return false;
+  }
 }
 
 /**

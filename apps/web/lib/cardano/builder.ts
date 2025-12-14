@@ -1,33 +1,12 @@
-/**
- * Cardano Transaction Builder
- * 
- * This module provides functions to build Cardano transactions for prescription operations.
- * Uses Lucid.js for transaction construction and signing.
- * 
- * TODO: Install and configure Lucid.js
- *   npm install lucid-cardano
- * 
- * TODO: Initialize Blockfrost provider
- *   import { Blockfrost } from "lucid-cardano";
- *   const lucid = await Lucid.new(
- *     new Blockfrost(process.env.BLOCKFROST_API_URL, process.env.BLOCKFROST_PROJECT_ID),
- *     process.env.CARDANO_NETWORK
- *   );
- * 
- * SECURITY: Transactions are built here but signed by wallet adapters (browser wallets).
- * Never store private keys in this codebase.
- */
-
+import { Data, fromText, toHex } from "lucid-cardano";
+import { getProvider } from "./provider";
 import type {
   PrescriptionDatum,
   PrescriptionRedeemer,
   PrescriptionUTxO,
   PrescriptionTxInput,
-  PrescriptionTxOutput,
 } from "./types";
-
-// TODO: Import Lucid types and utilities
-// import { Lucid, UTxO, Data, fromText, toHex } from "lucid-cardano";
+import { RedeemerAction } from "./types";
 
 /**
  * Build a transaction to create a new prescription UTxO
@@ -74,33 +53,22 @@ export async function buildCreatePrescriptionTx(
   datum: PrescriptionDatum,
   scriptAddress: string,
   walletAddress: string,
-  minLovelace: bigint = 2_000_000n // 2 ADA minimum
+  minLovelace: bigint = BigInt(2000000)
 ): Promise<string> {
-  // TODO: Implement using Lucid.js
-  // 
-  // Pseudocode:
-  // 1. Initialize Lucid with wallet
-  // 2. Convert datum to Plutus Data format using Data.to()
-  // 3. Build transaction:
-  //    - Add output with scriptAddress, datum, and minLovelace
-  //    - Select inputs from walletAddress to cover fees + minLovelace
-  //    - Add change output back to walletAddress
-  // 4. Return unsigned transaction as CBOR hex string
-  //
-  // Example structure:
-  // const lucid = await Lucid.new(provider, network);
-  // lucid.selectWalletFromAddress(walletAddress);
-  // 
-  // const datumHash = Data.to(datum, PrescriptionDatumSchema);
-  // 
-  // const tx = await lucid
-  //   .newTx()
-  //   .payToContract(scriptAddress, { inline: datumHash }, { lovelace: minLovelace })
-  //   .complete();
-  // 
-  // return tx.toString();
+  const lucid = await getProvider();
 
-  throw new Error("TODO: Implement buildCreatePrescriptionTx using Lucid.js");
+  if (!lucid) {
+    throw new Error("Failed to initialize Lucid provider");
+  }
+
+  const encodedDatum = encodeDatum(datum);
+
+  const tx = await lucid
+    .newTx()
+    .payToContract(scriptAddress, { inline: encodedDatum }, { lovelace: minLovelace })
+    .complete();
+
+  return tx.toString();
 }
 
 /**
@@ -141,100 +109,130 @@ export async function buildCreatePrescriptionTx(
 export async function buildRedeemPrescriptionTx(
   input: PrescriptionTxInput,
   pharmacyWalletAddress: string,
-  validatorScript: string, // Compiled Plutus script (CBOR hex or JSON)
-  newDatum?: PrescriptionDatum // For REFILL action
+  validatorScript: any,
+  scriptAddress: string,
+  newDatum?: PrescriptionDatum,
+  minLovelace: bigint = BigInt(2000000)
 ): Promise<string> {
-  // TODO: Implement using Lucid.js
-  // 
-  // Pseudocode:
-  // 1. Initialize Lucid with pharmacy wallet
-  // 2. Convert redeemer to Plutus Data format
-  // 3. Build transaction:
-  //    - Spend the prescription UTxO using validator script
-  //    - Apply redeemer
-  //    - If REFILL action and newDatum provided, create new output with new datum
-  //    - Add change output to pharmacyWalletAddress
-  // 4. Return unsigned transaction as CBOR hex string
-  //
-  // Example structure:
-  // const lucid = await Lucid.new(provider, network);
-  // lucid.selectWalletFromAddress(pharmacyWalletAddress);
-  // 
-  // const redeemerData = Data.to(input.redeemer, RedeemerSchema);
-  // const utxo: UTxO = {
-  //   txHash: input.utxo.txHash,
-  //   outputIndex: input.utxo.outputIndex,
-  //   address: input.utxo.scriptAddress,
-  //   datumHash: Data.to(input.utxo.datum, PrescriptionDatumSchema),
-  //   assets: { lovelace: input.utxo.lovelace },
-  // };
-  // 
-  // let tx = lucid
-  //   .newTx()
-  //   .collectFrom([utxo], validatorScript)
-  //   .attachSpendingValidator(validatorScript)
-  //   .redeemValue(redeemerData);
-  // 
-  // if (input.redeemer.action === RedeemerAction.REFILL && newDatum) {
-  //   const newDatumHash = Data.to(newDatum, PrescriptionDatumSchema);
-  //   tx = tx.payToContract(scriptAddress, { inline: newDatumHash }, { lovelace: minLovelace });
-  // }
-  // 
-  // const completedTx = await tx.complete();
-  // return completedTx.toString();
+  const lucid = await getProvider();
 
-  throw new Error("TODO: Implement buildRedeemPrescriptionTx using Lucid.js");
+  if (!lucid) {
+    throw new Error("Failed to initialize Lucid provider");
+  }
+
+  const redeemerData = encodeRedeemer(input.redeemer);
+
+  const utxo = {
+    txHash: input.utxo.txHash,
+    outputIndex: input.utxo.outputIndex,
+    address: input.utxo.scriptAddress,
+    datum: encodeDatum(input.utxo.datum),
+    assets: { lovelace: input.utxo.lovelace },
+  };
+
+  let tx = lucid
+    .newTx()
+    .collectFrom([utxo], redeemerData)
+    .attachSpendingValidator(validatorScript);
+
+  if (input.redeemer.action === RedeemerAction.REFILL && newDatum) {
+    const newDatumEncoded = encodeDatum(newDatum);
+    tx = tx.payToContract(scriptAddress, { inline: newDatumEncoded }, { lovelace: minLovelace });
+  }
+
+  const completedTx = await tx.complete();
+  return completedTx.toString();
 }
 
-/**
- * Submit a signed transaction to the Cardano network
- * 
- * @param signedTx - Signed transaction (CBOR hex string)
- * @returns Transaction hash
- */
-export async function submitTx(signedTx: string): Promise<string> {
-  // TODO: Implement using Lucid.js or Blockfrost API
-  // 
-  // const lucid = await Lucid.new(provider, network);
-  // const txHash = await lucid.awaitTx(await lucid.submitTx(signedTx));
-  // return txHash;
+function encodeRedeemer(redeemer: PrescriptionRedeemer): string {
+  let redeemerData: any;
 
-  throw new Error("TODO: Implement submitTx using Lucid.js or Blockfrost API");
+  if (redeemer.action === RedeemerAction.CREATE) {
+    redeemerData = { action: "CREATE" };
+  } else if (redeemer.action === RedeemerAction.REDEEM) {
+    redeemerData = {
+      action: "REDEEM",
+      pharmacyPubKeyHash: redeemer.pharmacyPubKeyHash
+        ? (redeemer.pharmacyPubKeyHash.startsWith("0x") ? redeemer.pharmacyPubKeyHash.slice(2) : redeemer.pharmacyPubKeyHash)
+        : null,
+      patientConsentCode: redeemer.patientConsentCode ? fromText(redeemer.patientConsentCode) : null,
+    };
+  } else if (redeemer.action === RedeemerAction.REFILL) {
+    redeemerData = { action: "REFILL" };
+  } else {
+    throw new Error(`Unknown redeemer action: ${redeemer.action}`);
+  }
+
+  return Data.to(redeemerData, RedeemerSchema);
 }
 
-/**
- * Encode datum to Plutus Data format
- * 
- * Helper function to convert TypeScript datum to Plutus Data
- * that can be attached to UTxOs.
- * 
- * @param datum - Prescription datum
- * @returns Plutus Data (hex string or Data object)
- */
+export async function submitTx(signedTxHex: string): Promise<string> {
+  const lucid = await getProvider();
+
+  if (!lucid) {
+    throw new Error("Failed to initialize Lucid provider");
+  }
+
+  const txHash = await (lucid as any).submitTx(signedTxHex);
+  await lucid.awaitTx(txHash);
+  return txHash;
+}
+
+const PrescriptionDatumSchema = Data.Object({
+  prescriptionId: Data.Bytes(),
+  patientHash: Data.Bytes(),
+  drugId: Data.Bytes(),
+  dosage: Data.Bytes(),
+  quantity: Data.Integer(),
+  doctorPubKeyHash: Data.Bytes(),
+  issuedAt: Data.Integer(),
+  expiryAt: Data.Integer(),
+  refillsRemaining: Data.Integer(),
+  meta: Data.Nullable(Data.Bytes()),
+});
+
+const RedeemerSchema = Data.Enum([
+  Data.Object({ action: Data.Literal("CREATE") }),
+  Data.Object({ action: Data.Literal("REDEEM"), pharmacyPubKeyHash: Data.Nullable(Data.Bytes()), patientConsentCode: Data.Nullable(Data.Bytes()) }),
+  Data.Object({ action: Data.Literal("REFILL") }),
+]);
+
 export function encodeDatum(datum: PrescriptionDatum): string {
-  // TODO: Implement using Lucid Data.to() or cardano-serialization-lib
-  // 
-  // import { Data } from "lucid-cardano";
-  // return Data.to(datum, PrescriptionDatumSchema);
+  const hexToBytes = (hex: string): string => {
+    const cleaned = hex.startsWith("0x") ? hex.slice(2) : hex;
+    return cleaned;
+  };
 
-  throw new Error("TODO: Implement encodeDatum using Lucid Data.to()");
+  const datumData = {
+    prescriptionId: fromText(datum.prescriptionId),
+    patientHash: hexToBytes(datum.patientHash),
+    drugId: fromText(datum.drugId),
+    dosage: fromText(datum.dosage),
+    quantity: BigInt(datum.quantity),
+    doctorPubKeyHash: hexToBytes(datum.doctorPubKeyHash),
+    issuedAt: BigInt(datum.issuedAt),
+    expiryAt: BigInt(datum.expiryAt),
+    refillsRemaining: BigInt(datum.refillsRemaining),
+    meta: datum.meta ? fromText(datum.meta) : null,
+  };
+
+  return Data.to(datumData as any, PrescriptionDatumSchema) as string;
 }
 
-/**
- * Decode datum from Plutus Data format
- * 
- * Helper function to convert Plutus Data back to TypeScript datum.
- * Used when reading UTxOs from the chain.
- * 
- * @param datumData - Plutus Data (hex string or Data object)
- * @returns Prescription datum
- */
 export function decodeDatum(datumData: string): PrescriptionDatum {
-  // TODO: Implement using Lucid Data.from() or cardano-serialization-lib
-  // 
-  // import { Data } from "lucid-cardano";
-  // return Data.from(datumData, PrescriptionDatumSchema) as PrescriptionDatum;
+  const decoded = Data.from(datumData, PrescriptionDatumSchema) as any;
 
-  throw new Error("TODO: Implement decodeDatum using Lucid Data.from()");
+  return {
+    prescriptionId: typeof decoded.prescriptionId === "string" ? decoded.prescriptionId : toHex(decoded.prescriptionId),
+    patientHash: typeof decoded.patientHash === "string" ? decoded.patientHash : toHex(decoded.patientHash),
+    drugId: typeof decoded.drugId === "string" ? decoded.drugId : toHex(decoded.drugId),
+    dosage: typeof decoded.dosage === "string" ? decoded.dosage : toHex(decoded.dosage),
+    quantity: Number(decoded.quantity),
+    doctorPubKeyHash: typeof decoded.doctorPubKeyHash === "string" ? decoded.doctorPubKeyHash : toHex(decoded.doctorPubKeyHash),
+    issuedAt: Number(decoded.issuedAt),
+    expiryAt: Number(decoded.expiryAt),
+    refillsRemaining: Number(decoded.refillsRemaining),
+    meta: decoded.meta ? (typeof decoded.meta === "string" ? decoded.meta : toHex(decoded.meta)) : undefined,
+  };
 }
 

@@ -8,14 +8,35 @@ const twilioClient = twilio(
   process.env.TWILIO_AUTH_TOKEN
 )
 
-// Email transporter for OTP delivery
-const emailTransporter = nodemailer.createTransport({
-  service: 'gmail', // You can change this to your preferred email service
-  auth: {
-    user: process.env.EMAIL_USER,
-    pass: process.env.EMAIL_PASS
+// Email transporter for OTP delivery (lazy initialization)
+function getEmailTransporter() {
+  if (!process.env.EMAIL_USER || !process.env.EMAIL_PASS) {
+    return null
   }
-})
+
+  const emailService = process.env.EMAIL_SERVICE || 'gmail'
+  
+  if (process.env.SENDGRID_API_KEY) {
+    return nodemailer.createTransport({
+      service: 'SendGrid',
+      auth: {
+        user: 'apikey',
+        pass: process.env.SENDGRID_API_KEY
+      }
+    })
+  }
+
+  return nodemailer.createTransport({
+    service: emailService,
+    host: process.env.SMTP_HOST,
+    port: process.env.SMTP_PORT ? parseInt(process.env.SMTP_PORT, 10) : undefined,
+    secure: process.env.SMTP_SECURE === 'true',
+    auth: {
+      user: process.env.EMAIL_USER,
+      pass: process.env.EMAIL_PASS
+    }
+  })
+}
 
 // In-memory store for OTPs (in production, use Redis or database)
 const otpStore = new Map<string, {
@@ -49,6 +70,24 @@ export class OTPService {
     otpId?: string
     error?: string
   }> {
+    const emailTransporter = getEmailTransporter()
+    
+    if (!emailTransporter) {
+      return {
+        success: false,
+        message: 'Email not configured. Please set EMAIL_USER and EMAIL_PASS (or SENDGRID_API_KEY) environment variables.',
+        error: 'Email service not configured'
+      }
+    }
+
+    if (!process.env.EMAIL_FROM && !process.env.EMAIL_USER) {
+      return {
+        success: false,
+        message: 'EMAIL_FROM or EMAIL_USER environment variable is required.',
+        error: 'Email from address not configured'
+      }
+    }
+
     try {
       console.log('📧 Sending OTP to patient via email...')
       
@@ -60,7 +99,7 @@ export class OTPService {
       const emailHtml = this.generateOTPEmailHTML(otp, prescriptionId)
       
       const mailOptions = {
-        from: process.env.EMAIL_USER,
+        from: process.env.EMAIL_FROM || process.env.EMAIL_USER,
         to: email,
         subject: `Your Prescription Verification Code - ${prescriptionId}`,
         html: emailHtml

@@ -7,11 +7,15 @@ import * as z from "zod"
 import { Button } from "@/components/ui/Button"
 import { Input } from "@/components/ui/Input"
 import { Textarea } from "@/components/ui/Textarea"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/Select"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/Card"
 import { Stepper } from "@/components/ui/Stepper"
 import { AlertBanner } from "@/components/ui/AlertBanner"
 import { ArrowLeft, ArrowRight, Check, Wallet } from "lucide-react"
+import { connectWallet, signTx, WalletProvider, type WalletInfo } from "@/lib/cardano/walletAdapter"
+import { submitTx } from "@/lib/cardano/builder"
+import { addressToPubKeyHash, hashPatientId, getScriptAddressFromValidator } from "@/lib/cardano/utils"
+import { getAllExplorerUrls } from "@/lib/cardano/explorer"
+import type { PrescriptionDatum } from "@/lib/cardano/types"
 
 const steps = [
     { label: "Patient Info" },
@@ -33,6 +37,10 @@ const formSchema = z.object({
 export default function CreatePrescriptionPage() {
     const [currentStep, setCurrentStep] = React.useState(0)
     const [txHash, setTxHash] = React.useState<string | null>(null)
+    const [wallet, setWallet] = React.useState<WalletInfo | null>(null)
+    const [loading, setLoading] = React.useState(false)
+    const [error, setError] = React.useState<string | null>(null)
+    const [status, setStatus] = React.useState<string>("")
 
     const form = useForm<z.infer<typeof formSchema>>({
         resolver: zodResolver(formSchema),
@@ -47,12 +55,90 @@ export default function CreatePrescriptionPage() {
         },
     })
 
+    const connectWalletHandler = async () => {
+        try {
+            setError(null)
+            setStatus("Connecting wallet...")
+            const walletInfo = await connectWallet(WalletProvider.NAMI)
+            setWallet(walletInfo)
+            setStatus("Wallet connected")
+        } catch (err: any) {
+            setError(err.message || "Failed to connect wallet")
+            setStatus("")
+        }
+    }
+
     const onSubmit = async (data: z.infer<typeof formSchema>) => {
-        // Simulate signing and submission
-        console.log(data)
-        setTimeout(() => {
-            setTxHash("0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef")
-        }, 1500)
+        if (!wallet) {
+            setError("Please connect your wallet first")
+            return
+        }
+
+        setLoading(true)
+        setError(null)
+        setStatus("Preparing prescription...")
+
+        try {
+            const scriptAddress = await getScriptAddressFromValidator()
+            setStatus("Building prescription datum...")
+
+            const patientSalt = process.env.NEXT_PUBLIC_PATIENT_ID_SALT || "default-salt-change-in-production"
+            const patientHash = await hashPatientId(data.patientId, patientSalt)
+            const doctorPubKeyHash = await addressToPubKeyHash(wallet.address)
+            const prescriptionId = window.crypto.randomUUID()
+            const issuedAt = Math.floor(Date.now() / 1000)
+            const expiryAt = Math.floor(new Date(data.expiryDate).getTime() / 1000)
+
+            const quantityNum = parseInt(data.quantity) || 0
+            if (isNaN(quantityNum) || quantityNum <= 0) {
+                throw new Error("Invalid quantity")
+            }
+
+            const datum: PrescriptionDatum = {
+                prescriptionId,
+                patientHash,
+                drugId: data.medicationName,
+                dosage: data.dosage,
+                quantity: quantityNum,
+                doctorPubKeyHash,
+                issuedAt,
+                expiryAt,
+                refillsRemaining: 0,
+            }
+
+            setStatus("Creating transaction...")
+            const response = await fetch("/api/prescription/create", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    datum,
+                    scriptAddress,
+                    walletAddress: wallet.address,
+                    doctorId: "doctor-1",
+                    idempotencyKey: prescriptionId,
+                }),
+            })
+
+            if (!response.ok) {
+                const errorData = await response.json()
+                throw new Error(errorData.error || "Failed to create prescription transaction")
+            }
+
+            const { unsignedTx } = await response.json()
+            setStatus("Please sign the transaction in your wallet...")
+
+            const signedTx = await signTx(unsignedTx, wallet)
+            setStatus("Submitting transaction to blockchain...")
+
+            const hash = await submitTx(signedTx)
+            setTxHash(hash)
+            setStatus("Transaction submitted successfully!")
+        } catch (err: any) {
+            setError(err.message || "Failed to create prescription")
+            setStatus("")
+        } finally {
+            setLoading(false)
+        }
     }
 
     const nextStep = async () => {
@@ -76,6 +162,9 @@ export default function CreatePrescriptionPage() {
     }
 
     if (txHash) {
+        const network = process.env.NEXT_PUBLIC_CARDANO_NETWORK || "Preview"
+        const explorerUrls = getAllExplorerUrls(txHash, network)
+        
         return (
             <div className="flex flex-col items-center justify-center py-12">
                 <Card className="w-full max-w-md text-center">
@@ -86,9 +175,28 @@ export default function CreatePrescriptionPage() {
                         <CardTitle>Prescription Created!</CardTitle>
                         <CardDescription>The prescription has been successfully signed and recorded on the blockchain.</CardDescription>
                     </CardHeader>
-                    <CardContent>
+                    <CardContent className="space-y-4">
                         <div className="rounded-md bg-muted p-4 text-xs font-mono break-all">
                             {txHash}
+                        </div>
+                        <div className="flex flex-col gap-2">
+                            <p className="text-sm text-muted-foreground">View on blockchain explorer:</p>
+                            <div className="flex gap-2 justify-center">
+                                <Button
+                                    variant="outline"
+                                    size="sm"
+                                    onClick={() => window.open(explorerUrls.cardanoscan, "_blank")}
+                                >
+                                    Cardanoscan
+                                </Button>
+                                <Button
+                                    variant="outline"
+                                    size="sm"
+                                    onClick={() => window.open(explorerUrls.blockfrost, "_blank")}
+                                >
+                                    Blockfrost
+                                </Button>
+                            </div>
                         </div>
                     </CardContent>
                     <CardFooter className="flex justify-center">
@@ -187,6 +295,36 @@ export default function CreatePrescriptionPage() {
                                 <AlertBanner variant="default" title="Review Details">
                                     Please review the prescription details before signing. This action cannot be undone.
                                 </AlertBanner>
+                                
+                                {!wallet && (
+                                    <div className="rounded-lg border border-yellow-200 bg-yellow-50 p-4">
+                                        <p className="text-sm text-yellow-800 mb-2">Connect your wallet to continue</p>
+                                        <Button onClick={connectWalletHandler} variant="outline" size="sm">
+                                            <Wallet className="mr-2 h-4 w-4" /> Connect Wallet
+                                        </Button>
+                                    </div>
+                                )}
+
+                                {wallet && (
+                                    <div className="rounded-lg border border-green-200 bg-green-50 p-4">
+                                        <p className="text-sm text-green-800">
+                                            Wallet connected: {wallet.address.slice(0, 20)}...
+                                        </p>
+                                    </div>
+                                )}
+
+                                {error && (
+                                    <AlertBanner variant="destructive" title="Error">
+                                        {error}
+                                    </AlertBanner>
+                                )}
+
+                                {status && (
+                                    <div className="rounded-lg border border-blue-200 bg-blue-50 p-4">
+                                        <p className="text-sm text-blue-800">{status}</p>
+                                    </div>
+                                )}
+
                                 <div className="rounded-lg border p-4 text-sm">
                                     <div className="grid grid-cols-2 gap-y-2">
                                         <span className="font-medium text-muted-foreground">Patient:</span>
@@ -223,8 +361,21 @@ export default function CreatePrescriptionPage() {
                             Next <ArrowRight className="ml-2 h-4 w-4" />
                         </Button>
                     ) : (
-                        <Button onClick={form.handleSubmit(onSubmit)} className="bg-primary hover:bg-primary/90">
-                            <Wallet className="mr-2 h-4 w-4" /> Sign with Wallet
+                        <Button 
+                            onClick={form.handleSubmit(onSubmit)} 
+                            className="bg-primary hover:bg-primary/90"
+                            disabled={loading || !wallet}
+                        >
+                            {loading ? (
+                                <>
+                                    <div className="mr-2 h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent" />
+                                    Processing...
+                                </>
+                            ) : (
+                                <>
+                                    <Wallet className="mr-2 h-4 w-4" /> Sign with Wallet
+                                </>
+                            )}
                         </Button>
                     )}
                 </CardFooter>

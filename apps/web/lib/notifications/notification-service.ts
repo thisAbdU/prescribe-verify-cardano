@@ -1,20 +1,41 @@
 import twilio from 'twilio'
 import nodemailer from 'nodemailer'
 
-// Twilio configuration
-const twilioClient = twilio(
-  process.env.TWILIO_ACCOUNT_SID,
-  process.env.TWILIO_AUTH_TOKEN
-)
+// Twilio configuration (optional)
+const twilioClient = 
+  process.env.TWILIO_ACCOUNT_SID && process.env.TWILIO_AUTH_TOKEN
+    ? twilio(process.env.TWILIO_ACCOUNT_SID, process.env.TWILIO_AUTH_TOKEN)
+    : null
 
-// Email transporter configuration
-const emailTransporter = nodemailer.createTransport({
-  service: 'gmail', // You can change this to your preferred email service
-  auth: {
-    user: process.env.EMAIL_USER,
-    pass: process.env.EMAIL_PASS
+// Email transporter configuration (lazy initialization)
+function getEmailTransporter() {
+  if (!process.env.EMAIL_USER || !process.env.EMAIL_PASS) {
+    return null
   }
-})
+
+  const emailService = process.env.EMAIL_SERVICE || 'gmail'
+  
+  if (process.env.SENDGRID_API_KEY) {
+    return nodemailer.createTransport({
+      service: 'SendGrid',
+      auth: {
+        user: 'apikey',
+        pass: process.env.SENDGRID_API_KEY
+      }
+    })
+  }
+
+  return nodemailer.createTransport({
+    service: emailService,
+    host: process.env.SMTP_HOST,
+    port: process.env.SMTP_PORT ? parseInt(process.env.SMTP_PORT, 10) : undefined,
+    secure: process.env.SMTP_SECURE === 'true',
+    auth: {
+      user: process.env.EMAIL_USER,
+      pass: process.env.EMAIL_PASS
+    }
+  })
+}
 
 export interface PrescriptionNotificationData {
   prescriptionId: string
@@ -40,6 +61,14 @@ export class NotificationService {
     sid?: string
     error?: string
   }> {
+    if (!twilioClient || !process.env.TWILIO_PHONE_NUMBER) {
+      return {
+        success: false,
+        message: 'SMS not configured. Please set TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN, and TWILIO_PHONE_NUMBER environment variables.',
+        error: 'SMS service not configured'
+      }
+    }
+
     try {
       console.log('📱 Sending SMS notification...')
       
@@ -75,13 +104,31 @@ export class NotificationService {
     messageId?: string
     error?: string
   }> {
+    const emailTransporter = getEmailTransporter()
+    
+    if (!emailTransporter) {
+      return {
+        success: false,
+        message: 'Email not configured. Please set EMAIL_USER and EMAIL_PASS (or SENDGRID_API_KEY) environment variables.',
+        error: 'Email service not configured'
+      }
+    }
+
+    if (!process.env.EMAIL_FROM && !process.env.EMAIL_USER) {
+      return {
+        success: false,
+        message: 'EMAIL_FROM or EMAIL_USER environment variable is required.',
+        error: 'Email from address not configured'
+      }
+    }
+
     try {
       console.log('📧 Sending email notification...')
       
       const emailHtml = this.generateEmailHTML(data)
       
       const mailOptions: any = {
-        from: process.env.EMAIL_USER,
+        from: process.env.EMAIL_FROM || process.env.EMAIL_USER,
         to: data.patientEmail,
         subject: `Your Prescription from Dr. ${data.doctorName} - ${data.prescriptionId}`,
         html: emailHtml

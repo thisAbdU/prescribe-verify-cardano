@@ -1,0 +1,11 @@
+services:
+  aiken-compiler:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    volumes:
+      - ./packages/onchain-scripts:/app
+    working_dir: /app/validator
+    command: bash -c "aiken check && aiken build && aiken export validators/prescription > ../compiled/validator.plutus"
+
+volumes: {}

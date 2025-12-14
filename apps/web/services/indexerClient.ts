@@ -14,25 +14,32 @@
  *   npm install @cardano-foundation/koios-sdk
  */
 
+import { Blockfrost } from "@blockfrost/blockfrost-js";
 import type { PrescriptionUTxO, PrescriptionDatum } from "../lib/cardano/types";
 import { decodeDatum } from "../lib/cardano/builder";
 
-// TODO: Import Blockfrost
-// import { Blockfrost } from "@blockfrost/blockfrost-js";
-
-/**
- * Initialize Blockfrost client
- */
 function getBlockfrostClient() {
-  // TODO: Initialize Blockfrost client
-  // 
-  // const blockfrost = new Blockfrost({
-  //   projectId: process.env.BLOCKFROST_PROJECT_ID!,
-  //   network: process.env.CARDANO_NETWORK === "mainnet" ? "mainnet" : "preview",
-  // });
-  // return blockfrost;
+  const projectId =
+    process.env.NEXT_PUBLIC_BLOCKFROST_PROJECT_ID ||
+    process.env.BLOCKFROST_PROJECT_ID;
 
-  throw new Error("TODO: Initialize Blockfrost client");
+  if (!projectId) {
+    throw new Error("BLOCKFROST_PROJECT_ID environment variable is required");
+  }
+
+  const network =
+    process.env.NEXT_PUBLIC_CARDANO_NETWORK ||
+    process.env.CARDANO_NETWORK ||
+    "testnet";
+
+  const blockfrost = new Blockfrost(
+    network === "mainnet"
+      ? "https://cardano-mainnet.blockfrost.io/api/v0"
+      : "https://cardano-preview.blockfrost.io/api/v0",
+    projectId
+  );
+
+  return blockfrost;
 }
 
 /**
@@ -44,30 +51,34 @@ function getBlockfrostClient() {
 export async function getPrescriptionUTxO(
   utxoReference: string
 ): Promise<PrescriptionUTxO> {
-  // TODO: Implement using Blockfrost
-  // 
-  // 1. Parse utxoReference (split by "#")
-  //    const [txHash, outputIndex] = utxoReference.split("#");
-  // 
-  // 2. Fetch UTxO from Blockfrost
-  //    const blockfrost = getBlockfrostClient();
-  //    const utxo = await blockfrost.txsUtxos(txHash);
-  //    const output = utxo.outputs[parseInt(outputIndex)];
-  // 
-  // 3. Decode datum
-  //    const datum = decodeDatum(output.data_hash || output.inline_datum);
-  // 
-  // 4. Return PrescriptionUTxO
-  //    return {
-  //      txHash,
-  //      outputIndex: parseInt(outputIndex),
-  //      datum: datum as PrescriptionDatum,
-  //      utxoRef: utxoReference,
-  //      lovelace: BigInt(output.amount[0].quantity),
-  //      scriptAddress: output.address,
-  //    };
+  const [txHash, outputIndex] = utxoReference.split("#");
 
-  throw new Error("TODO: Implement getPrescriptionUTxO using Blockfrost");
+  if (!txHash || !outputIndex) {
+    throw new Error(`Invalid UTxO reference format: ${utxoReference}`);
+  }
+
+  const blockfrost = getBlockfrostClient();
+  const utxo = await blockfrost.txsUtxos(txHash);
+  const output = utxo.outputs[parseInt(outputIndex)];
+
+  if (!output) {
+    throw new Error(`UTxO not found: ${utxoReference}`);
+  }
+
+  if (!output.inline_datum && !output.data_hash) {
+    throw new Error(`UTxO has no datum: ${utxoReference}`);
+  }
+
+  const datum = decodeDatum(output.inline_datum || output.data_hash);
+
+  return {
+    txHash,
+    outputIndex: parseInt(outputIndex),
+    datum: datum as PrescriptionDatum,
+    utxoRef: utxoReference,
+    lovelace: BigInt(output.amount[0]?.quantity || "0"),
+    scriptAddress: output.address,
+  };
 }
 
 /**
@@ -79,26 +90,24 @@ export async function getPrescriptionUTxO(
 export async function getUTxOsAtAddress(
   scriptAddress: string
 ): Promise<PrescriptionUTxO[]> {
-  // TODO: Implement using Blockfrost
-  // 
-  // const blockfrost = getBlockfrostClient();
-  // const utxos = await blockfrost.addressesUtxos(scriptAddress);
-  // 
-  // return Promise.all(
-  //   utxos.map(async (utxo) => {
-  //     const datum = decodeDatum(utxo.data_hash || utxo.inline_datum);
-  //     return {
-  //       txHash: utxo.tx_hash,
-  //       outputIndex: utxo.output_index,
-  //       datum: datum as PrescriptionDatum,
-  //       utxoRef: `${utxo.tx_hash}#${utxo.output_index}`,
-  //       lovelace: BigInt(utxo.amount[0].quantity),
-  //       scriptAddress,
-  //     };
-  //   })
-  // );
+  const blockfrost = getBlockfrostClient();
+  const utxos = await blockfrost.addressesUtxos(scriptAddress);
 
-  throw new Error("TODO: Implement getUTxOsAtAddress using Blockfrost");
+  return Promise.all(
+    utxos
+      .filter((utxo) => utxo.inline_datum || utxo.data_hash)
+      .map(async (utxo) => {
+        const datum = decodeDatum(utxo.inline_datum || utxo.data_hash || "");
+        return {
+          txHash: utxo.tx_hash,
+          outputIndex: utxo.output_index,
+          datum: datum as PrescriptionDatum,
+          utxoRef: `${utxo.tx_hash}#${utxo.output_index}`,
+          lovelace: BigInt(utxo.amount[0]?.quantity || "0"),
+          scriptAddress,
+        };
+      })
+  );
 }
 
 /**
@@ -108,12 +117,8 @@ export async function getUTxOsAtAddress(
  * @returns Transaction details
  */
 export async function getTransaction(txHash: string): Promise<any> {
-  // TODO: Implement using Blockfrost
-  // 
-  // const blockfrost = getBlockfrostClient();
-  // return await blockfrost.txs(txHash);
-
-  throw new Error("TODO: Implement getTransaction using Blockfrost");
+  const blockfrost = getBlockfrostClient();
+  return await blockfrost.txs(txHash);
 }
 
 /**
@@ -123,18 +128,15 @@ export async function getTransaction(txHash: string): Promise<any> {
  * @returns Whether the UTxO has been spent
  */
 export async function isUTxOSpent(utxoReference: string): Promise<boolean> {
-  // TODO: Implement
-  // Try to fetch the UTxO - if it doesn't exist or is spent, return true
-  // 
-  // try {
-  //   await getPrescriptionUTxO(utxoReference);
-  //   return false;
-  // } catch (error) {
-  //   // UTxO not found or spent
-  //   return true;
-  // }
-
-  throw new Error("TODO: Implement isUTxOSpent");
+  try {
+    await getPrescriptionUTxO(utxoReference);
+    return false;
+  } catch (error: any) {
+    if (error.status_code === 404 || error.message?.includes("not found")) {
+      return true;
+    }
+    throw error;
+  }
 }
 
 /**
@@ -143,12 +145,8 @@ export async function isUTxOSpent(utxoReference: string): Promise<boolean> {
  * @returns Current block height
  */
 export async function getCurrentBlockHeight(): Promise<number> {
-  // TODO: Implement using Blockfrost
-  // 
-  // const blockfrost = getBlockfrostClient();
-  // const latestBlock = await blockfrost.blocksLatest();
-  // return latestBlock.height;
-
-  throw new Error("TODO: Implement getCurrentBlockHeight");
+  const blockfrost = getBlockfrostClient();
+  const latestBlock = await blockfrost.blocksLatest();
+  return latestBlock.height;
 }
 

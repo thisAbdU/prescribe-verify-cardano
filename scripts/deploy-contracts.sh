@@ -1,5 +1,5 @@
 #!/bin/bash
-# Deploy Plutus contracts to Cardano network
+# Deploy Aiken contracts to Cardano network
 # 
 # This script compiles and deploys the prescription validator script
 # to the Cardano testnet or mainnet.
@@ -27,23 +27,30 @@ fi
 
 cd "$ONCHAIN_DIR"
 
-# TODO: Implement deployment steps
-# 1. Compile Plutus script
-#    ./scripts/compile.sh
-# 
-# 2. Get script address
-#    SCRIPT_ADDRESS=$(cardano-cli address build \
-#      --payment-script-file compiled/validator.plutus \
-#      $NETWORK_FLAG)
-# 
-# 3. Output script address
-#    echo "Validator script address: $SCRIPT_ADDRESS"
-#    echo "Set this in your .env file: PRESCRIPTION_VALIDATOR_SCRIPT_ADDRESS=$SCRIPT_ADDRESS"
-# 
-# 4. (Optional) Publish script for transparency
-#    # Scripts don't need to be "deployed" - they're referenced by hash
-#    # But you may want to publish the script source code
+# Compile Aiken script
+echo "Compiling validator..."
+./scripts/compile.sh
 
-echo "TODO: Implement contract deployment"
-echo "See packages/onchain-scripts/README.md for deployment instructions"
+# Get script address
+if [ -f "compiled/validator.plutus" ]; then
+  SCRIPT_ADDRESS=$(cardano-cli address build \
+    --payment-script-file compiled/validator.plutus \
+    $NETWORK_FLAG 2>/dev/null || echo "")
+  
+  if [ -n "$SCRIPT_ADDRESS" ]; then
+    echo ""
+    echo "✓ Validator script address: $SCRIPT_ADDRESS"
+    echo "Set this in your .env file: PRESCRIPTION_VALIDATOR_SCRIPT_ADDRESS=$SCRIPT_ADDRESS"
+  else
+    echo "⚠ Could not generate script address. Make sure cardano-cli is installed."
+  fi
+else
+  echo "✗ Compiled validator not found. Compilation may have failed."
+  exit 1
+fi
+
+echo ""
+echo "Deployment complete!"
+echo "Note: Scripts don't need to be 'deployed' - they're referenced by hash."
+echo "The script address above is what you'll use to lock UTxOs."
 

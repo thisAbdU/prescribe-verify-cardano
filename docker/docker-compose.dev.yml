@@ -44,15 +44,59 @@ services:
   #   environment:
   #     MOCK_NETWORK: testnet
 
+  # Indexer Service
+  indexer:
+    build:
+      context: ..
+      dockerfile: services/indexer/Dockerfile
+    environment:
+      - NODE_ENV=development
+      - BLOCKFROST_PROJECT_ID=${BLOCKFROST_PROJECT_ID}
+      - CARDANO_NETWORK=${CARDANO_NETWORK:-testnet}
+      - PRESCRIPTION_VALIDATOR_SCRIPT_ADDRESS=${PRESCRIPTION_VALIDATOR_SCRIPT_ADDRESS}
+      - SUPABASE_URL=${SUPABASE_URL}
+      - SUPABASE_SERVICE_ROLE_KEY=${SUPABASE_SERVICE_ROLE_KEY}
+      - POLL_INTERVAL_MS=${POLL_INTERVAL_MS:-30000}
+    volumes:
+      - ../services/indexer:/app
+      - ../apps/web/lib/cardano:/app/lib/cardano
+    working_dir: /app
+    command: pnpm dev
+    restart: unless-stopped
+    depends_on:
+      - supabase
+
+  # Notifications Service
+  notifications:
+    build:
+      context: ..
+      dockerfile: services/notifications/Dockerfile
+    environment:
+      - NODE_ENV=development
+      - SUPABASE_URL=${SUPABASE_URL}
+      - SUPABASE_SERVICE_ROLE_KEY=${SUPABASE_SERVICE_ROLE_KEY}
+      - TWILIO_SID=${TWILIO_SID}
+      - TWILIO_TOKEN=${TWILIO_TOKEN}
+      - TWILIO_FROM=${TWILIO_FROM}
+      - SENDGRID_API_KEY=${SENDGRID_API_KEY}
+      - EMAIL_USER=${EMAIL_USER}
+      - EMAIL_PASSWORD=${EMAIL_PASSWORD}
+      - EMAIL_FROM=${EMAIL_FROM}
+      - POLL_INTERVAL_MS=${POLL_INTERVAL_MS:-10000}
+    volumes:
+      - ../services/notifications:/app
+    working_dir: /app
+    command: pnpm dev
+    restart: unless-stopped
+    depends_on:
+      - supabase
+
 volumes:
   supabase_data:
   cardano_data:
 
-# TODO: Add services for:
-# - Indexer service (Node.js)
-# - Notifications service (Node.js)
-# - API service (if needed)
-
 # Usage:
-# docker-compose -f docker/docker-compose.dev.yml up -d
+# 1. Copy .env.example to .env and fill in your values
+# 2. Run: docker-compose -f docker/docker-compose.dev.yml up -d
+# 3. Or run services individually: pnpm dev:indexer, pnpm dev:notifications
 

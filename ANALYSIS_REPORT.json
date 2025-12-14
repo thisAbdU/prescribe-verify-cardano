@@ -1,0 +1,402 @@
+{
+  "structure": {
+    "root": {
+      "type": "monorepo",
+      "packageManager": "pnpm",
+      "workspaces": ["apps/*", "packages/*", "services/*"]
+    },
+    "folders": {
+      "apps/web": {
+        "type": "Next.js 14 application",
+        "framework": "React with App Router",
+        "location": "Frontend application",
+        "keyFiles": [
+          "app/doctor/* - Doctor UI flows",
+          "app/pharmacy/* - Pharmacy UI flows",
+          "app/patient/* - Patient UI flows",
+          "lib/cardano/* - Cardano transaction builders (stubs)",
+          "services/* - Business logic services (stubs)"
+        ]
+      },
+      "packages/onchain-scripts": {
+        "type": "Plutus validator package",
+        "location": "On-chain smart contracts",
+        "keyFiles": [
+          "contract/src/Validator.hs - Plutus validator (skeleton)",
+          "scripts/compile.sh - Compilation script (stub)"
+        ]
+      },
+      "services/indexer": {
+        "type": "Node.js service",
+        "location": "UTxO watcher and blockchain sync",
+        "keyFiles": [
+          "src/worker.ts - Indexer worker (skeleton)",
+          "tests/worker.test.ts - Tests (stub)"
+        ]
+      },
+      "services/notifications": {
+        "type": "Node.js service",
+        "location": "SMS/Email notification worker",
+        "keyFiles": [
+          "src/send.ts - Notification sender (skeleton)"
+        ]
+      },
+      "infra/migrations": {
+        "type": "SQL migrations",
+        "location": "Database schema",
+        "keyFiles": [
+          "001_prescription_schema.sql - Complete schema with tables, indexes, RLS"
+        ]
+      },
+      "docker": {
+        "type": "Docker configuration",
+        "location": "Development containers",
+        "keyFiles": [
+          "docker-compose.dev.yml - Minimal compose file"
+        ]
+      }
+    }
+  },
+  "files": {
+    "cardano_relevant": {
+      "apps/web/lib/cardano/types.ts": {
+        "status": "A - Use as-is",
+        "summary": "Complete TypeScript type definitions for PrescriptionDatum, RedeemerAction, PrescriptionUTxO. Well-documented with JSDoc.",
+        "action": "No changes needed"
+      },
+      "apps/web/lib/cardano/builder.ts": {
+        "status": "B - Refactor",
+        "summary": "Transaction builder stubs with TODOs. Contains function signatures and pseudocode but no implementation. Needs Lucid.js integration.",
+        "action": "Implement encodeDatum, decodeDatum, buildCreatePrescriptionTx, buildRedeemPrescriptionTx, submitTx using Lucid.js"
+      },
+      "apps/web/lib/cardano/walletAdapter.ts": {
+        "status": "B - Refactor",
+        "summary": "Wallet adapter interface with TODOs. Defines WalletProvider enum and function signatures but no implementation.",
+        "action": "Implement connectWallet, signTx, getAddress, isWalletAvailable for Nami/Eternl/Flint"
+      },
+      "apps/web/lib/cardano/index.ts": {
+        "status": "A - Use as-is",
+        "summary": "Simple re-export file. No changes needed.",
+        "action": "No changes needed"
+      },
+      "packages/onchain-scripts/contract/src/Validator.hs": {
+        "status": "B - Refactor",
+        "summary": "Plutus validator skeleton with type definitions and basic structure. Contains pseudocode in comments but incomplete validation logic.",
+        "action": "Complete validator implementation with proper CREATE/REDEEM/REFILL validation logic (keep as documented stubs per requirements)"
+      },
+      "packages/onchain-scripts/README.md": {
+        "status": "A - Use as-is",
+        "summary": "Comprehensive documentation of validator architecture, datum schema, redeemer types, and compilation steps.",
+        "action": "Enhance with compiled script ABI examples"
+      },
+      "apps/web/services/prescriptionService.ts": {
+        "status": "B - Refactor",
+        "summary": "Business logic service with function signatures and TODOs. Needs implementation of createPrescription, redeemPrescription, hashPatientId.",
+        "action": "Implement business logic functions, integrate with Supabase and Cardano builders"
+      },
+      "apps/web/services/indexerClient.ts": {
+        "status": "B - Refactor",
+        "summary": "Blockfrost client wrapper with function signatures and TODOs. Needs Blockfrost integration.",
+        "action": "Implement Blockfrost client initialization and UTxO query functions"
+      },
+      "services/indexer/src/worker.ts": {
+        "status": "B - Refactor",
+        "summary": "Indexer worker skeleton with polling loop structure and TODOs. Needs Blockfrost polling and Supabase sync logic.",
+        "action": "Implement UTxO polling, datum decoding, Supabase upserts, event emission"
+      },
+      "services/notifications/src/send.ts": {
+        "status": "B - Refactor",
+        "summary": "Notification service skeleton with function signatures and TODOs. Needs Twilio and email integration.",
+        "action": "Implement SMS/email sending, event polling, template generation"
+      }
+    },
+    "database": {
+      "infra/migrations/001_prescription_schema.sql": {
+        "status": "A - Use as-is",
+        "summary": "Complete database schema with doctors, pharmacies, prescriptions, events tables. Includes indexes, RLS policies, triggers.",
+        "action": "No changes needed - schema is production-ready"
+      }
+    },
+    "configuration": {
+      "package.json (root)": {
+        "status": "A - Use as-is",
+        "summary": "Root package.json with workspace configuration and dev scripts. Already has dev:web, dev:indexer, dev:notifications.",
+        "action": "No changes needed"
+      },
+      "apps/web/package.json": {
+        "status": "A - Use as-is",
+        "summary": "Web app package.json with lucid-cardano and @blockfrost/blockfrost-js already installed.",
+        "action": "No changes needed"
+      },
+      "services/indexer/package.json": {
+        "status": "A - Use as-is",
+        "summary": "Indexer package.json with @blockfrost/blockfrost-js and @supabase/supabase-js already installed.",
+        "action": "No changes needed"
+      },
+      "services/notifications/package.json": {
+        "status": "A - Use as-is",
+        "summary": "Notifications package.json with twilio and nodemailer already installed.",
+        "action": "No changes needed"
+      }
+    },
+    "infrastructure": {
+      "docker/docker-compose.dev.yml": {
+        "status": "C - Move/Enhance",
+        "summary": "Minimal docker-compose file with commented Supabase and Cardano node sections. Missing indexer and notifications services.",
+        "action": "Add indexer and notifications service definitions"
+      },
+      "scripts/deploy-contracts.sh": {
+        "status": "B - Refactor",
+        "summary": "Deployment script stub with TODOs. Has network detection logic but no actual deployment steps.",
+        "action": "Complete deployment script (keep as documented stub per requirements)"
+      },
+      "scripts/run-local-dev.sh": {
+        "status": "D - Replace",
+        "summary": "File not found - needs to be created.",
+        "action": "Create script to start all dev services"
+      }
+    },
+    "tests": {
+      "apps/web/lib/cardano/builder.test.ts": {
+        "status": "B - Refactor",
+        "summary": "Test file with describe blocks and TODOs. Needs actual test implementations with mocks.",
+        "action": "Implement tests with mocked Lucid and provider"
+      },
+      "services/indexer/tests/worker.test.ts": {
+        "status": "B - Refactor",
+        "summary": "Test file stub with TODOs. Needs Blockfrost and Supabase mocks.",
+        "action": "Implement integration tests with mocked Blockfrost and Supabase"
+      }
+    },
+    "missing": {
+      "provider.ts": {
+        "location": "apps/web/lib/cardano/provider.ts",
+        "summary": "Blockfrost provider initialization wrapper",
+        "priority": "High"
+      },
+      "compiled scripts": {
+        "location": "packages/onchain-scripts/compiled/",
+        "summary": "Compiled Plutus script artifacts (JSON/CBOR) and ABI definitions",
+        "priority": "High"
+      },
+      "API endpoints": {
+        "location": "apps/web/app/api/prescription/",
+        "summary": "Next.js API routes for prescription create/redeem/status",
+        "priority": "High"
+      },
+      ".env.example": {
+        "location": ".env.example",
+        "summary": "Environment variable template with all required keys",
+        "priority": "High"
+      },
+      "CI workflow": {
+        "location": ".github/workflows/ci.yml",
+        "summary": "GitHub Actions workflow for lint/test/build",
+        "priority": "Medium"
+      }
+    }
+  },
+  "cardano_relevance": {
+    "existing_integration_points": [
+      {
+        "component": "Frontend (Next.js)",
+        "files": [
+          "apps/web/lib/cardano/builder.ts",
+          "apps/web/lib/cardano/walletAdapter.ts",
+          "apps/web/lib/cardano/types.ts"
+        ],
+        "status": "Stubs exist, need implementation",
+        "dependencies_installed": true
+      },
+      {
+        "component": "On-chain Scripts",
+        "files": [
+          "packages/onchain-scripts/contract/src/Validator.hs"
+        ],
+        "status": "Skeleton exists, needs completion (as stubs per requirements)",
+        "dependencies_installed": false
+      },
+      {
+        "component": "Indexer Service",
+        "files": [
+          "services/indexer/src/worker.ts",
+          "apps/web/services/indexerClient.ts"
+        ],
+        "status": "Stubs exist, need Blockfrost integration",
+        "dependencies_installed": true
+      },
+      {
+        "component": "Business Logic",
+        "files": [
+          "apps/web/services/prescriptionService.ts"
+        ],
+        "status": "Stubs exist, need implementation",
+        "dependencies_installed": true
+      }
+    ],
+    "blockchain_flow_mapping": {
+      "doctor_flow": {
+        "ui": "apps/web/app/doctor/issue-prescription/page.tsx",
+        "service": "apps/web/services/prescriptionService.ts::createPrescription",
+        "builder": "apps/web/lib/cardano/builder.ts::buildCreatePrescriptionTx",
+        "wallet": "apps/web/lib/cardano/walletAdapter.ts::signTx",
+        "status": "UI exists, service/builder/wallet need implementation"
+      },
+      "pharmacy_flow": {
+        "ui": "apps/web/app/pharmacy/verify-prescription/page.tsx",
+        "service": "apps/web/services/prescriptionService.ts::redeemPrescription",
+        "builder": "apps/web/lib/cardano/builder.ts::buildRedeemPrescriptionTx",
+        "wallet": "apps/web/lib/cardano/walletAdapter.ts::signTx",
+        "status": "UI exists, service/builder/wallet need implementation"
+      },
+      "indexer_flow": {
+        "worker": "services/indexer/src/worker.ts",
+        "client": "apps/web/services/indexerClient.ts",
+        "database": "infra/migrations/001_prescription_schema.sql",
+        "status": "Schema complete, worker/client need implementation"
+      }
+    }
+  },
+  "missing_pieces": [
+    {
+      "item": "Lucid.js provider initialization",
+      "location": "apps/web/lib/cardano/provider.ts",
+      "priority": "High",
+      "risk": "Blocking - required for all transaction building",
+      "dependencies": ["lucid-cardano", "@blockfrost/blockfrost-js"]
+    },
+    {
+      "item": "Datum encode/decode functions",
+      "location": "apps/web/lib/cardano/builder.ts",
+      "priority": "High",
+      "risk": "Blocking - required for on-chain data serialization",
+      "dependencies": ["lucid-cardano"]
+    },
+    {
+      "item": "Transaction builder implementations",
+      "location": "apps/web/lib/cardano/builder.ts",
+      "priority": "High",
+      "risk": "Blocking - required for prescription creation/redemption",
+      "dependencies": ["lucid-cardano", "provider.ts"]
+    },
+    {
+      "item": "Wallet adapter implementations",
+      "location": "apps/web/lib/cardano/walletAdapter.ts",
+      "priority": "High",
+      "risk": "Blocking - required for transaction signing",
+      "dependencies": ["Browser wallet extensions"]
+    },
+    {
+      "item": "Compiled Plutus script artifacts",
+      "location": "packages/onchain-scripts/compiled/",
+      "priority": "High",
+      "risk": "Blocking - required for transaction building",
+      "dependencies": ["Plutus toolchain", "Validator.hs compilation"]
+    },
+    {
+      "item": "Script ABI documentation",
+      "location": "packages/onchain-scripts/compiled/abi.json",
+      "priority": "High",
+      "risk": "High - required for Lucid.js integration",
+      "dependencies": ["Compiled script"]
+    },
+    {
+      "item": "Indexer worker implementation",
+      "location": "services/indexer/src/worker.ts",
+      "priority": "High",
+      "risk": "High - required for off-chain data sync",
+      "dependencies": ["Blockfrost client", "Supabase client", "decodeDatum"]
+    },
+    {
+      "item": "Notifications service implementation",
+      "location": "services/notifications/src/send.ts",
+      "priority": "Medium",
+      "risk": "Medium - required for patient notifications",
+      "dependencies": ["Twilio", "Nodemailer", "Supabase events table"]
+    },
+    {
+      "item": "Prescription service implementation",
+      "location": "apps/web/services/prescriptionService.ts",
+      "priority": "High",
+      "risk": "High - required for business logic",
+      "dependencies": ["Supabase client", "Cardano builders", "hashPatientId"]
+    },
+    {
+      "item": "Indexer client implementation",
+      "location": "apps/web/services/indexerClient.ts",
+      "priority": "Medium",
+      "risk": "Medium - required for UTxO queries",
+      "dependencies": ["Blockfrost client", "decodeDatum"]
+    },
+    {
+      "item": "API endpoints for prescription operations",
+      "location": "apps/web/app/api/prescription/",
+      "priority": "High",
+      "risk": "High - required for server-side transaction building",
+      "dependencies": ["prescriptionService", "Supabase auth"]
+    },
+    {
+      "item": "Environment variable template",
+      "location": ".env.example",
+      "priority": "High",
+      "risk": "Low - documentation/configuration",
+      "dependencies": []
+    },
+    {
+      "item": "Docker compose service definitions",
+      "location": "docker/docker-compose.dev.yml",
+      "priority": "Medium",
+      "risk": "Low - development convenience",
+      "dependencies": []
+    },
+    {
+      "item": "CI/CD workflow",
+      "location": ".github/workflows/ci.yml",
+      "priority": "Medium",
+      "risk": "Low - development workflow",
+      "dependencies": []
+    },
+    {
+      "item": "Test implementations",
+      "location": "apps/web/lib/cardano/builder.test.ts, services/indexer/tests/worker.test.ts",
+      "priority": "Medium",
+      "risk": "Medium - code quality assurance",
+      "dependencies": ["Implementation code", "Test mocks"]
+    },
+    {
+      "item": "Supabase client initialization",
+      "location": "apps/web/lib/supabaseClient.ts",
+      "priority": "High",
+      "risk": "High - required for database operations",
+      "dependencies": ["@supabase/supabase-js"]
+    }
+  ],
+  "priority_risks": {
+    "critical_path": [
+      "provider.ts - Blockfrost/Lucid initialization",
+      "encodeDatum/decodeDatum - Data serialization",
+      "buildCreatePrescriptionTx/buildRedeemPrescriptionTx - Transaction building",
+      "walletAdapter implementations - Transaction signing",
+      "Supabase client initialization - Database operations",
+      "prescriptionService implementation - Business logic"
+    ],
+    "high_priority": [
+      "Compiled script artifacts and ABI",
+      "Indexer worker implementation",
+      "API endpoints",
+      "Environment configuration"
+    ],
+    "medium_priority": [
+      "Notifications service",
+      "Indexer client",
+      "Docker compose enhancements",
+      "Test implementations",
+      "CI/CD workflow"
+    ],
+    "low_priority": [
+      "Documentation enhancements",
+      "Development scripts"
+    ]
+  }
+}
+

@@ -11,8 +11,10 @@
     "test": "vitest"
   },
   "dependencies": {
+    "@blockfrost/blockfrost-js": "^6.0.0",
     "@heroicons/react": "^2.2.0",
     "@hookform/resolvers": "^3.10.0",
+    "@peculiar/webcrypto": "^1.5.0",
     "@radix-ui/react-accordion": "1.2.2",
     "@radix-ui/react-alert-dialog": "1.1.4",
     "@radix-ui/react-aspect-ratio": "1.1.1",
@@ -40,11 +42,13 @@
     "@radix-ui/react-toggle": "1.1.1",
     "@radix-ui/react-toggle-group": "1.1.1",
     "@radix-ui/react-tooltip": "1.1.6",
+    "@supabase/supabase-js": "^2.39.0",
     "@types/nodemailer": "^7.0.2",
     "@types/qrcode": "^1.5.5",
     "@types/twilio": "^3.19.3",
     "@vercel/analytics": "1.3.1",
     "autoprefixer": "^10.4.20",
+    "buffer": "^6.0.3",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "cmdk": "1.0.4",
@@ -52,12 +56,11 @@
     "embla-carousel-react": "8.5.1",
     "geist": "^1.3.1",
     "input-otp": "1.4.1",
-    "lucide-react": "^0.454.0",
     "lucid-cardano": "^0.10.0",
-    "@blockfrost/blockfrost-js": "^6.0.0",
-    "@supabase/supabase-js": "^2.39.0",
+    "lucide-react": "^0.454.0",
     "next": "14.2.25",
     "next-themes": "^0.4.6",
+    "node-fetch": "^3.3.2",
     "nodemailer": "^7.0.6",
     "qrcode": "^1.5.4",
     "react": "^19",
@@ -70,12 +73,15 @@
     "tailwind-merge": "^3.3.1",
     "tailwindcss-animate": "^1.0.7",
     "twilio": "^5.10.2",
+    "util": "^0.12.5",
     "vaul": "^0.9.9",
+    "ws": "^8.18.3",
     "zod": "3.25.67"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4.1.9",
     "@types/node": "^22",
+    "@types/node-fetch": "^2.6.13",
     "@types/react": "^18",
     "@types/react-dom": "^18",
     "postcss": "^8.5",
@@ -85,4 +91,3 @@
     "vitest": "^1.2.0"
   }
 }
-

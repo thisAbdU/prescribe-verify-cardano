@@ -22,10 +22,8 @@ import type {
 } from "../lib/cardano/types";
 import { buildCreatePrescriptionTx, buildRedeemPrescriptionTx, submitTx } from "../lib/cardano/builder";
 import type { WalletInfo } from "../lib/cardano/walletAdapter";
-import { createClient } from "@supabase/supabase-js";
-
-// TODO: Import Supabase client
-// import { supabaseClient } from "../lib/supabaseClient";
+import { supabaseAdmin } from "../lib/supabaseClient";
+import { getPrescriptionUTxO } from "./indexerClient";
 
 /**
  * Input for creating a prescription
@@ -90,16 +88,10 @@ export type RedeemPrescriptionInput = {
  * @returns Hashed patient identifier (hex string)
  */
 export function hashPatientId(patientId: string, salt: string): string {
-  // TODO: Implement SHA-256 hashing with salt
-  // 
-  // import { createHash } from "crypto";
-  // const hash = createHash("sha256");
-  // hash.update(patientId + salt);
-  // return hash.digest("hex");
-  // 
-  // OR use a library like bcrypt for additional security
-
-  throw new Error("TODO: Implement hashPatientId with SHA-256 + salt");
+  const crypto = require("crypto");
+  const hash = crypto.createHash("sha256");
+  hash.update(patientId + salt);
+  return hash.digest("hex");
 }
 
 /**
@@ -123,60 +115,11 @@ export async function createPrescription(
   doctorWallet: WalletInfo,
   validatorScriptAddress: string
 ): Promise<{ txHash: string; prescriptionId: string }> {
-  // TODO: Implement prescription creation
-  // 
-  // 1. Validate input (check expiry, refills, etc.)
-  // 2. Check idempotency key in Supabase (prevent duplicates)
-  // 3. Hash patient ID
-  //    const patientHash = hashPatientId(input.patientId, process.env.PATIENT_ID_SALT!);
-  // 
-  // 4. Create prescription datum
-  //    const datum: PrescriptionDatum = {
-  //      prescriptionId: crypto.randomUUID(),
-  //      patientHash,
-  //      drugId: input.drugId,
-  //      dosage: input.dosage,
-  //      quantity: input.quantity,
-  //      doctorPubKeyHash: extractPubKeyHash(doctorWallet.address),
-  //      issuedAt: Math.floor(Date.now() / 1000),
-  //      expiryAt: input.expiryAt,
-  //      refillsRemaining: input.refillsAllowed,
-  //    };
-  // 
-  // 5. Build transaction
-  //    const unsignedTx = await buildCreatePrescriptionTx(
-  //      datum,
-  //      validatorScriptAddress,
-  //      doctorWallet.address
-  //    );
-  // 
-  // 6. Store in Supabase (before signing to reserve the record)
-  //    const { data: prescription, error } = await supabase
-  //      .from("prescriptions")
-  //      .insert({
-  //        id: datum.prescriptionId,
-  //        script_address: validatorScriptAddress,
-  //        patient_hash: patientHash,
-  //        drug_name: input.drugName,
-  //        quantity: input.quantity,
-  //        dosage: input.dosage,
-  //        doctor_id: input.doctorId,
-  //        expiry: new Date(input.expiryAt * 1000),
-  //        refills_allowed: input.refillsAllowed,
-  //        status: "issued",
-  //        idempotency_key: input.idempotencyKey,
-  //        // tx_hash will be updated after submission
-  //      })
-  //      .select()
-  //      .single();
-  // 
-  // 7. Return unsigned transaction (to be signed by wallet adapter)
-  //    return { unsignedTx, prescriptionId: datum.prescriptionId };
-  // 
-  // NOTE: Transaction signing and submission should happen in the UI component
-  // using walletAdapter.signTx() and submitTx()
-
-  throw new Error("TODO: Implement createPrescription");
+  throw new Error(
+    "createPrescription is not implemented. " +
+    "Prescription creation is handled by the /api/prescription/create endpoint. " +
+    "Use the API route directly from your frontend components."
+  );
 }
 
 /**
