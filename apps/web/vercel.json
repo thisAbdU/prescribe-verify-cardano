@@ -1,5 +1,0 @@
-{
-  "buildCommand": "./vercel-build.sh",
-  "installCommand": "echo 'Install handled in build command'"
-}
-

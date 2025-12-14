@@ -15,8 +15,7 @@ export async function GET() {
       return NextResponse.json({ address: scriptAddress });
     }
 
-    const projectRoot = join(process.cwd(), "..", "..");
-    const validatorPath = join(projectRoot, "packages", "onchain-scripts", "compiled", "validator.plutus");
+    const validatorPath = join(process.cwd(), "packages", "onchain-scripts", "compiled", "validator.plutus");
     
     if (!existsSync(validatorPath)) {
       return NextResponse.json(
@@ -40,11 +39,11 @@ export async function GET() {
       cborHex: validatorHex
     };
     
-    const tempJsonPath = join(projectRoot, "packages", "onchain-scripts", "compiled", "validator.json");
+    const tempJsonPath = join(process.cwd(), "packages", "onchain-scripts", "compiled", "validator.json");
     writeFileSync(tempJsonPath, JSON.stringify(validatorJson, null, 2));
     
     try {
-      const dockerCommand = `docker run --rm -v "${projectRoot}:/workspace" -w /workspace ghcr.io/intersectmbo/cardano-node:10.6.1 cli address build --payment-script-file packages/onchain-scripts/compiled/validator.json ${networkFlag}`;
+      const dockerCommand = `docker run --rm -v "${process.cwd()}:/workspace" -w /workspace ghcr.io/intersectmbo/cardano-node:10.6.1 cli address build --payment-script-file packages/onchain-scripts/compiled/validator.json ${networkFlag}`;
       
       const { stdout, stderr } = await execAsync(dockerCommand, {
         timeout: 30000,
