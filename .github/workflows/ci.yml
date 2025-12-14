@@ -47,5 +47,10 @@ jobs:
         with:
           node-version: "20"
           cache: "pnpm"
+      - name: Install Aiken
+        run: |
+          curl -L https://github.com/aiken-lang/aiken/releases/latest/download/aiken-x86_64-unknown-linux-gnu.tar.gz | tar -xz
+          sudo mv aiken /usr/local/bin/
+          chmod +x /usr/local/bin/aiken
       - run: pnpm install --frozen-lockfile
       - run: pnpm build
